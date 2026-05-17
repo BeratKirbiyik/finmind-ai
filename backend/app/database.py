@@ -15,7 +15,6 @@ if not _db_url:
         "Add it in Railway → Service → Variables."
     )
 
-# asyncpg requires postgresql+asyncpg:// scheme
 if _db_url.startswith("postgresql://") or _db_url.startswith("postgres://"):
     _db_url = _db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
     _db_url = _db_url.replace("postgres://", "postgresql+asyncpg://", 1)
@@ -24,21 +23,26 @@ ssl_ctx = ssl.create_default_context()
 ssl_ctx.check_hostname = False
 ssl_ctx.verify_mode = ssl.CERT_NONE
 
+
+async def _init_conn(conn):
+    """DISCARD ALL clears any prepared statements left on a reused
+    pgbouncer backend connection, making it truly fresh."""
+    await conn.execute("DISCARD ALL")
+
+
 engine = create_async_engine(
     _db_url,
-    # Persistent pool: same asyncpg connection is reused per slot,
-    # so prepared statements never collide across requests.
     pool_size=5,
     max_overflow=10,
-    pool_pre_ping=True,       # drop stale connections automatically
-    pool_recycle=300,         # recycle every 5 min
+    pool_pre_ping=True,
+    pool_recycle=300,
     connect_args={
         "ssl": ssl_ctx,
-        "statement_cache_size": 0,   # disable asyncpg LRU statement cache
+        "statement_cache_size": 0,
+        "init": _init_conn,          # runs DISCARD ALL on every new connection
     },
-    # Unique prepared-statement names guard against any residual
-    # pgbouncer transaction-mode conflicts.
     execution_options={
+        # Unique names per statement — prevents __asyncpg_stmt_N__ collisions
         "asyncpg_prepared_statement_name_func": lambda: f"__s_{uuid.uuid4().hex}"
     },
 )
@@ -49,8 +53,10 @@ AsyncSessionLocal = async_sessionmaker(
     expire_on_commit=False,
 )
 
+
 class Base(DeclarativeBase):
     pass
+
 
 async def get_db():
     async with AsyncSessionLocal() as session:
@@ -58,6 +64,7 @@ async def get_db():
             yield session
         finally:
             await session.close()
+
 
 async def init_db():
     async with engine.begin() as conn:
