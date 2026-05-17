@@ -1,9 +1,9 @@
 import ssl
 import os
+import uuid
 import logging
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy.pool import NullPool
 
 logger = logging.getLogger(__name__)
 
@@ -26,13 +26,20 @@ ssl_ctx.verify_mode = ssl.CERT_NONE
 
 engine = create_async_engine(
     _db_url,
-    poolclass=NullPool,
+    # Persistent pool: same asyncpg connection is reused per slot,
+    # so prepared statements never collide across requests.
+    pool_size=5,
+    max_overflow=10,
+    pool_pre_ping=True,       # drop stale connections automatically
+    pool_recycle=300,         # recycle every 5 min
     connect_args={
         "ssl": ssl_ctx,
-        # asyncpg 0.29+: completely disables prepared statements
-        # (required for pgbouncer transaction mode on Supabase)
-        "statement_cache_size": 0,
-        "prepared_statement_cache_size": 0,
+        "statement_cache_size": 0,   # disable asyncpg LRU statement cache
+    },
+    # Unique prepared-statement names guard against any residual
+    # pgbouncer transaction-mode conflicts.
+    execution_options={
+        "asyncpg_prepared_statement_name_func": lambda: f"__s_{uuid.uuid4().hex}"
     },
 )
 
