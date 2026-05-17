@@ -1,6 +1,5 @@
 import ssl
 import os
-import uuid
 import logging
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
@@ -30,12 +29,11 @@ engine = create_async_engine(
     poolclass=NullPool,
     connect_args={
         "ssl": ssl_ctx,
+        # asyncpg 0.29+: completely disables prepared statements
+        # (required for pgbouncer transaction mode on Supabase)
         "statement_cache_size": 0,
+        "prepared_statement_cache_size": 0,
     },
-).execution_options(
-    # Generate unique prepared statement names to prevent
-    # DuplicatePreparedStatementError with pgbouncer transaction mode
-    asyncpg_prepared_statement_name_func=lambda: f"_s_{uuid.uuid4().hex[:12]}"
 )
 
 AsyncSessionLocal = async_sessionmaker(
