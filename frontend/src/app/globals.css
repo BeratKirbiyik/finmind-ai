@@ -200,40 +200,94 @@ body::before {
 
 /* ── Light mode ────────────────────────────────────────────────── */
 [data-theme="light"] {
-  --bg-base: #f8f8fc;
+  --bg-base: #f4f4f8;
   --bg-surface: #ffffff;
-  --bg-card: #f0f0f8;
-  --bg-card-hover: #e8e8f0;
-  --border: #00000010;
-  --border-accent: #f59e0b44;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f0f0f6;
+  --border: #e2e2ec;
+  --border-accent: #f59e0b66;
   --text-primary: #0a0a1a;
   --text-secondary: #444460;
-  --text-muted: #888899;
+  --text-muted: #7777aa;
 }
 
 [data-theme="light"] body {
-  background: var(--bg-base);
-  color: var(--text-primary);
+  background: #f4f4f8 !important;
+  color: #0a0a1a !important;
 }
 
 [data-theme="light"] body::before {
-  background: radial-gradient(ellipse, #f59e0b06 0%, transparent 70%);
+  background: radial-gradient(ellipse, #f59e0b04 0%, transparent 70%);
 }
 
-[data-theme="light"] .bg-\[\#16161f\],
-[data-theme="light"] .bg-\[\#0d0d14\],
-[data-theme="light"] .bg-\[\#111118\] {
-  background: var(--bg-card) !important;
+/* Sidebar */
+[data-theme="light"] aside {
+  background: #ffffff !important;
+  border-color: #e2e2ec !important;
 }
 
-[data-theme="light"] .border-\[\#ffffff0f\] {
-  border-color: var(--border) !important;
+/* Kartlar — tüm koyu arka planları override et */
+[data-theme="light"] [class*="bg-[#16161f]"],
+[data-theme="light"] [class*="bg-[#111118]"],
+[data-theme="light"] [class*="bg-[#0d0d14]"],
+[data-theme="light"] [class*="bg-[#1c1c28]"] {
+  background: #ffffff !important;
+  border-color: #e2e2ec !important;
 }
 
-[data-theme="light"] .text-\[\#8888a0\] {
-  color: var(--text-secondary) !important;
+/* Metin renkleri */
+[data-theme="light"] [class*="text-[#8888a0]"] {
+  color: #444460 !important;
+}
+[data-theme="light"] [class*="text-[#44445a]"] {
+  color: #7777aa !important;
+}
+[data-theme="light"] [class*="text-[#f0f0f5]"],
+[data-theme="light"] .text-white {
+  color: #0a0a1a !important;
 }
 
-[data-theme="light"] .text-\[\#44445a\] {
-  color: var(--text-muted) !important;
+/* Border */
+[data-theme="light"] [class*="border-[#ffffff0f]"] {
+  border-color: #e2e2ec !important;
+}
+
+/* Input alanları */
+[data-theme="light"] input,
+[data-theme="light"] select,
+[data-theme="light"] textarea {
+  background: #f4f4f8 !important;
+  border-color: #e2e2ec !important;
+  color: #0a0a1a !important;
+}
+
+[data-theme="light"] input::placeholder {
+  color: #9999bb !important;
+}
+
+/* Header */
+[data-theme="light"] header {
+  background: #ffffff !important;
+  border-color: #e2e2ec !important;
+}
+
+/* Main chat area */
+[data-theme="light"] main {
+  background: #f4f4f8 !important;
+}
+
+/* Chat balonları */
+[data-theme="light"] .rounded-2xl.rounded-bl-sm {
+  background: #ffffff !important;
+  border-color: #e2e2ec !important;
+}
+
+/* Grid background */
+[data-theme="light"] .fixed.inset-0 {
+  opacity: 0.015 !important;
+}
+
+/* Skor halkası arka plan */
+[data-theme="light"] circle[stroke="#ffffff08"] {
+  stroke: #e2e2ec !important;
 }
