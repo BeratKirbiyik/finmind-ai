@@ -8,8 +8,11 @@ import ConfettiCanvas from "@/components/ui/ConfettiCanvas";
 import { SkeletonDashboard } from "@/components/ui/SkeletonCard";
 import AddTransactionModal from "@/components/ui/AddTransactionModal";
 import MonthlyChart from "@/components/ui/MonthlyChart";
+import ForecastCard from "@/components/ui/ForecastCard";
+import CarbonCard from "@/components/ui/CarbonCard";
 import LiteracyPage from "./literacy/page";
 import { analyticsApi, goalsApi } from "@/lib/api";
+import { useTheme } from "@/hooks/useTheme";
 import {
   BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer
@@ -187,6 +190,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export default function Dashboard() {
   const router = useRouter();
+  const { theme, toggle } = useTheme();
   const [userId, setUserId] = useState("");
   const [isDemo, setIsDemo] = useState(false);
   const [data, setData] = useState<any>(null);
@@ -286,6 +290,10 @@ export default function Dashboard() {
               Demo Modu
             </div>
           )}
+          <button onClick={toggle}
+            className="w-full flex items-center justify-center gap-2 text-xs text-[#44445a] hover:text-[#8888a0] py-2 transition-colors rounded-lg hover:bg-[#ffffff06]">
+            {theme === "dark" ? "☀️ Açık Mod" : "🌙 Koyu Mod"}
+          </button>
           <button onClick={() => { localStorage.clear(); router.push("/"); }}
             className="w-full text-xs text-[#44445a] hover:text-[#8888a0] py-2 transition-colors text-center rounded-lg hover:bg-[#ffffff06]">
             ← Çıkış
@@ -404,6 +412,8 @@ export default function Dashboard() {
 
                 <MonthlyChart userId={userId} />
 
+                <ForecastCard userId={userId} />
+
                 {/* Goals — D.03 hover hint */}
                 {goals.length > 0 && (
                   <div className="animate-fade-up">
@@ -418,6 +428,8 @@ export default function Dashboard() {
                     </div>
                   </div>
                 )}
+
+                <CarbonCard userId={userId} />
               </>
             )}
           </div>

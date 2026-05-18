@@ -197,3 +197,43 @@ body::before {
   border-radius: 15px;
   background: #16161f;
 }
+
+/* ── Light mode ────────────────────────────────────────────────── */
+[data-theme="light"] {
+  --bg-base: #f8f8fc;
+  --bg-surface: #ffffff;
+  --bg-card: #f0f0f8;
+  --bg-card-hover: #e8e8f0;
+  --border: #00000010;
+  --border-accent: #f59e0b44;
+  --text-primary: #0a0a1a;
+  --text-secondary: #444460;
+  --text-muted: #888899;
+}
+
+[data-theme="light"] body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+}
+
+[data-theme="light"] body::before {
+  background: radial-gradient(ellipse, #f59e0b06 0%, transparent 70%);
+}
+
+[data-theme="light"] .bg-\[\#16161f\],
+[data-theme="light"] .bg-\[\#0d0d14\],
+[data-theme="light"] .bg-\[\#111118\] {
+  background: var(--bg-card) !important;
+}
+
+[data-theme="light"] .border-\[\#ffffff0f\] {
+  border-color: var(--border) !important;
+}
+
+[data-theme="light"] .text-\[\#8888a0\] {
+  color: var(--text-secondary) !important;
+}
+
+[data-theme="light"] .text-\[\#44445a\] {
+  color: var(--text-muted) !important;
+}

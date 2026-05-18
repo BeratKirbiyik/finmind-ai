@@ -28,6 +28,8 @@ const STEP_LABELS: Record<string, string> = {
 
 export default function ChatInterface({ userId }: { userId: string }) {
   const [inputFocused, setInputFocused] = useState(false);
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
   const [messages, setMessages] = useState<Message[]>([{
     id: "0", role: "assistant",
     content: "Merhaba! Ben FinMind AI, finansal koçunuzum. Harcamalarınız, bütçeniz veya hedefleriniz hakkında doğal dilde sorabilirsiniz. Size veriye dayalı, kişiselleştirilmiş analizler sunacağım.",
@@ -73,6 +75,34 @@ export default function ChatInterface({ userId }: { userId: string }) {
         content: "Bağlantı hatası. Backend çalışıyor mu?",
       }]);
     } finally { setLoading(false); setActiveSteps([]); }
+  };
+
+  const startListening = () => {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert("Tarayıcınız ses tanımayı desteklemiyor. Chrome kullanın.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "tr-TR";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => setListening(true);
+    recognition.onend = () => setListening(false);
+    recognition.onerror = () => setListening(false);
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setInput(transcript);
+      setTimeout(() => send(transcript), 300);
+    };
+
+    recognition.start();
+    recognitionRef.current = recognition;
   };
 
   return (
@@ -148,6 +178,23 @@ export default function ChatInterface({ userId }: { userId: string }) {
             ? "border-[#f59e0b44] shadow-[0_0_20px_#f59e0b11]"
             : "border-[#ffffff0f] hover:border-[#f59e0b22]"
         }`}>
+          <button
+            onClick={startListening}
+            disabled={loading}
+            className={`px-3 py-2.5 rounded-xl transition-all duration-200 shrink-0 ${
+              listening
+                ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                : "text-[#44445a] hover:text-[#f59e0b] hover:bg-[#f59e0b11]"
+            }`}
+            title="Sesli soru sor">
+            {listening ? (
+              <span className="flex items-center gap-1 text-xs">
+                <span className="w-2 h-2 bg-red-400 rounded-full"
+                  style={{ animation: "dot-pulse 800ms ease-in-out infinite" }}/>
+                Dinliyor
+              </span>
+            ) : "🎤"}
+          </button>
           <input
             value={input}
             onChange={e => setInput(e.target.value)}

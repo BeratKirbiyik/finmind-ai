@@ -1,6 +1,9 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from sqlalchemy import and_
 from app.database import get_db
+from app.models.schemas import Transaction
 from app.agents.tools import (
     get_user_transactions,
     get_user_info,
@@ -10,6 +13,7 @@ from app.agents.tools import (
 from app.agents.reporting import calculate_monthly_score
 from datetime import datetime, timedelta, timezone
 from collections import defaultdict
+import uuid
 
 router = APIRouter()
 
@@ -88,6 +92,172 @@ async def get_dashboard(user_id: str, db: AsyncSession = Depends(get_db)):
             ),
         },
     }
+
+@router.get("/forecast/{user_id}")
+async def get_spending_forecast(user_id: str, db: AsyncSession = Depends(get_db)):
+    import google.generativeai as genai
+    from app.config import settings
+    import json
+
+    genai.configure(api_key=settings.gemini_api_key)
+
+    since = datetime.utcnow() - timedelta(days=120)
+    result = await db.execute(
+        select(Transaction).where(
+            and_(
+                Transaction.user_id == uuid.UUID(user_id),
+                Transaction.transaction_date >= since,
+                Transaction.is_income == False
+            )
+        ).order_by(Transaction.transaction_date.asc())
+    )
+    transactions = result.scalars().all()
+
+    if not transactions:
+        return {"forecast": None, "message": "Yeterli veri yok"}
+
+    monthly = defaultdict(float)
+    monthly_cats = defaultdict(lambda: defaultdict(float))
+
+    for tx in transactions:
+        key = tx.transaction_date.strftime("%Y-%m")
+        monthly[key] += tx.amount
+        monthly_cats[key][tx.category.value] += tx.amount
+
+    sorted_months = sorted(monthly.keys())[-3:]
+
+    if len(sorted_months) < 2:
+        return {"forecast": None, "message": "En az 2 aylık veri gerekli"}
+
+    last_month = sorted_months[-1]
+    year, mon = map(int, last_month.split("-"))
+    if mon == 12:
+        next_year, next_mon = year + 1, 1
+    else:
+        next_year, next_mon = year, mon + 1
+
+    months_tr = ["", "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+                 "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"]
+    next_month_label = f"{months_tr[next_mon]} {next_year}"
+
+    monthly_data = [
+        {
+            "month": m,
+            "total": round(monthly[m], 2),
+            "categories": {k: round(v, 2) for k, v in monthly_cats[m].items()}
+        }
+        for m in sorted_months
+    ]
+
+    totals = [monthly[m] for m in sorted_months]
+    n = len(totals)
+    weights = list(range(1, n + 1))
+    weighted_avg = sum(t * w for t, w in zip(totals, weights)) / sum(weights)
+    trend = (totals[-1] - totals[0]) / max(totals[0], 1) * 100
+
+    model = genai.GenerativeModel("gemini-2.5-flash")
+    prompt = f"""Son {n} aylık harcama verisi:
+{chr(10).join([f"- {d['month']}: {d['total']:,.0f} TL" for d in monthly_data])}
+
+Trend: %{trend:.1f} {'artış' if trend > 0 else 'azalış'}
+Ağırlıklı ortalama: {weighted_avg:,.0f} TL
+
+{next_month_label} için tahmini harcama ve kısa yorum yaz.
+SADECE JSON döndür:
+{{
+  "predicted_amount": 15000,
+  "confidence": "high",
+  "trend": "increasing",
+  "insight": "2-3 cümle Türkçe yorum",
+  "warning": "varsa uyarı, yoksa null",
+  "saving_tip": "bir tasarruf önerisi"
+}}"""
+
+    try:
+        response = model.generate_content(prompt)
+        raw = response.text.strip()
+        if "```" in raw:
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        gemini_data = json.loads(raw.strip())
+    except Exception:
+        gemini_data = {
+            "predicted_amount": round(weighted_avg, 2),
+            "confidence": "medium",
+            "trend": "stable",
+            "insight": f"Son {n} aylık veriye göre {next_month_label} tahmini hesaplandı.",
+            "warning": None,
+            "saving_tip": "Harcamalarınızı kategorize ederek tasarruf fırsatları bulun."
+        }
+
+    return {
+        "forecast": {
+            "next_month": next_month_label,
+            "next_month_key": f"{next_year}-{str(next_mon).zfill(2)}",
+            "predicted_amount": gemini_data.get("predicted_amount", round(weighted_avg, 2)),
+            "confidence": gemini_data.get("confidence", "medium"),
+            "trend": gemini_data.get("trend", "stable"),
+            "insight": gemini_data.get("insight", ""),
+            "warning": gemini_data.get("warning"),
+            "saving_tip": gemini_data.get("saving_tip", ""),
+            "historical": monthly_data,
+        }
+    }
+
+
+@router.get("/carbon/{user_id}")
+async def get_carbon_footprint(user_id: str, db: AsyncSession = Depends(get_db)):
+    since = datetime.utcnow() - timedelta(days=30)
+    result = await db.execute(
+        select(Transaction).where(
+            and_(
+                Transaction.user_id == uuid.UUID(user_id),
+                Transaction.transaction_date >= since,
+                Transaction.is_income == False,
+                Transaction.category.in_(["transport", "food"])
+            )
+        )
+    )
+    transactions = result.scalars().all()
+
+    transport_spend = sum(t.amount for t in transactions if t.category.value == "transport")
+    food_spend = sum(t.amount for t in transactions if t.category.value == "food")
+
+    transport_co2 = (transport_spend / 1000) * 45
+    food_co2 = (food_spend / 1000) * 30
+    total_co2 = transport_co2 + food_co2
+
+    turkey_avg = 350
+    comparison_pct = round((total_co2 / turkey_avg) * 100, 1)
+    trees_needed = round(total_co2 * 12 / 22, 1)
+
+    level = "düşük" if total_co2 < 200 else "orta" if total_co2 < 350 else "yüksek"
+    level_color = "#10b981" if level == "düşük" else "#f59e0b" if level == "orta" else "#ef4444"
+
+    tips = []
+    if transport_spend > 1000:
+        tips.append("Toplu taşımaya geçiş ulaşım karbon ayak izinizi %60 azaltır")
+    if food_spend > 3000:
+        tips.append("Haftada 2 gün et tüketimini azaltmak yıllık ~120 kg CO2 tasarrufu sağlar")
+    if not tips:
+        tips.append("Karbon ayak iziniz Türkiye ortalamasının altında, tebrikler!")
+
+    return {
+        "carbon": {
+            "total_co2_kg": round(total_co2, 1),
+            "transport_co2_kg": round(transport_co2, 1),
+            "food_co2_kg": round(food_co2, 1),
+            "turkey_avg_kg": turkey_avg,
+            "comparison_pct": comparison_pct,
+            "trees_needed": trees_needed,
+            "level": level,
+            "level_color": level_color,
+            "tips": tips,
+            "period": "Son 30 gün",
+        }
+    }
+
 
 def _category_label(cat: str) -> str:
     labels = {

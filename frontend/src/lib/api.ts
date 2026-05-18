@@ -32,6 +32,10 @@ export const authApi = {
 export const analyticsApi = {
   getDashboard: (userId: string) =>
     api.get(`/api/analytics/dashboard/${userId}`),
+  getForecast: (userId: string) =>
+    api.get(`/api/analytics/forecast/${userId}`),
+  getCarbon: (userId: string) =>
+    api.get(`/api/analytics/carbon/${userId}`),
 };
 
 export const transactionCreateApi = {
