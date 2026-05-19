@@ -114,9 +114,7 @@ ChromaDB'de saklanan **8 Türkçe finansal bilgi dokümanı** (50/30/20 kuralı,
 - Rozet sistemi: Bütçe Ustası, Süper Tasarrufçu, Bilinçli Harcayıcı
 
 <br/>
-
-<br/>
-## Mimari Kararlar
+## 💡 Mimari Kararlar
 
 **Neden LangGraph?**
 LangGraph'ın StateGraph yaklaşımı, finansal veri analizinde
@@ -347,12 +345,6 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 | **Yenilikçilik** | 10p | Finansal DNA profili, gamification + konfeti, Vision API fatura okuma |
 | **UI/UX** | 10p | Luxury Dark tema, 18 micro-interaction, skeleton loader, streaming chat |
 | **Sunum & Dokümantasyon** | 20p | Bu README + tanıtım videosu + canlı demo |
-
-<br/>
-
-## 👥 Takım
-
-**BTK Akademi Hackathon '26 Katılımcıları**
 
 <br/>
 
