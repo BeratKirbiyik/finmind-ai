@@ -114,6 +114,8 @@ ChromaDB'de saklanan **8 Türkçe finansal bilgi dokümanı** (50/30/20 kuralı,
 - Rozet sistemi: Bütçe Ustası, Süper Tasarrufçu, Bilinçli Harcayıcı
 
 <br/>
+
+<br/>
 ## Mimari Kararlar
 
 **Neden LangGraph?**
