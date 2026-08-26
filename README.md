@@ -23,10 +23,10 @@ Tek bir chatbot'tan farklı olarak, birbirleriyle koordineli çalışan **4 uzma
 
 ## ✨ Özellikler
 
-### 🔴 Killer Feature 1: Finansal DNA Profili
+### Finansal DNA Profili
 Harcama alışkanlıklarını zamansal ve davranışsal örüntülerle analiz eder. Stresli günlerde yapılan anlık alışverişleri, tekrar eden impulsif harcamaları tespit eder ve kullanıcıya "Anlık Karar Verici", "Dengeli Harcayıcı" gibi kişilik profilleri sunar.
 
-### 🔵 Killer Feature 2: Gamified Finansal Koçluk
+### Oyunlaştırılmış Finansal Koçluk
 Aylık 0-100 finansal skor sistemi. "💰 Bütçe Ustası", "🏆 Süper Tasarrufçu" gibi kazanılabilir rozetler. Rozet kazanıldığında konfeti animasyonu. Hedeflere giden yolda günlük birikim hesabı.
 
 ### 📸 Fotoğraftan Harcama Aktarımı
@@ -114,7 +114,29 @@ ChromaDB'de saklanan **8 Türkçe finansal bilgi dokümanı** (50/30/20 kuralı,
 - Rozet sistemi: Bütçe Ustası, Süper Tasarrufçu, Bilinçli Harcayıcı
 
 <br/>
+## 💡 Mimari Kararlar
 
+**Neden LangGraph?**
+LangGraph'ın StateGraph yaklaşımı, finansal veri analizinde
+deterministik akış sağlar. CrewAI'ın agent loop'ları veya
+AutoGen'in sohbet tabanlı yaklaşımının aksine, her ajanın
+ne zaman devreye gireceği önceden tanımlıdır. Finansal
+uygulamalarda halüsinasyon riskini minimize etmek için
+bu kontrol kritiktir.
+
+**Neden RAG + ChromaDB?**
+Gemini'nin 1M token context'i tüm harcama geçmişini
+taşıyabilir, ancak finansal tavsiye için domain-specific
+bilgi gereklidir. ChromaDB ile Türkiye'ye özgü finansal
+bilgi tabanı (50/30/20 kuralı, TEFAS, enflasyon koruması)
+semantik olarak aranır ve her yanıta enjekte edilir.
+
+**Neden Gemini 2.5 Flash?**
+Tool use, JSON mode ve 1M token context desteği.
+Türkçe performansı rakiplerine göre üstün.
+Embedding için text-embedding-001 ile tek API,
+ek servis maliyeti yok.
+<br/>
 ## 🛠️ Teknoloji Stack
 
 | Katman | Teknoloji | Neden? |
@@ -323,12 +345,6 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 | **Yenilikçilik** | 10p | Finansal DNA profili, gamification + konfeti, Vision API fatura okuma |
 | **UI/UX** | 10p | Luxury Dark tema, 18 micro-interaction, skeleton loader, streaming chat |
 | **Sunum & Dokümantasyon** | 20p | Bu README + tanıtım videosu + canlı demo |
-
-<br/>
-
-## 👥 Takım
-
-**BTK Akademi Hackathon '26 Katılımcıları**
 
 <br/>
 
