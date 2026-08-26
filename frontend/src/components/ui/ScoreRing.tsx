@@ -52,8 +52,9 @@ export default function ScoreRing({ score }: { score: number }) {
               transition: "stroke 0.3s ease",
             }}
           />
-          <text x="50" y="45" textAnchor="middle" fill="white"
-            fontSize="20" fontWeight="700" fontFamily="JetBrains Mono, monospace">
+          <text x="50" y="45" textAnchor="middle"
+            fontSize="20" fontWeight="700" fontFamily="JetBrains Mono, monospace"
+            className="score-ring-value">
             {Math.round(progress)}
           </text>
           <text x="50" y="60" textAnchor="middle" fill="#44445a"

@@ -14,16 +14,34 @@ interface ForecastData {
   historical: { month: string; total: number }[];
 }
 
-export default function ForecastCard({ userId }: { userId: string }) {
+export default function ForecastCard({ userId, isDemo = false }: { userId: string; isDemo?: boolean }) {
   const [data, setData] = useState<ForecastData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (isDemo) {
+      setData({
+        next_month: "Haziran 2026",
+        predicted_amount: 15000,
+        confidence: "medium",
+        trend: "increasing",
+        insight: "Mayıs ayındaki belirgin düşüş, önceki yüksek harcamaların bir dengelemesi veya geçici bir tasarruf dönemi olarak yorumlanabilir. Haziran ayında ortalama harcama seviyelerine güçlü bir geri dönüş, hatta Nisan ayındaki zirveyi aşan özel harcamalarla bir artış beklenebilir.",
+        warning: "Verilerdeki yüksek dalgalanma nedeniyle bu tahmin önemli belirsizlikler içermektedir. Mayıs ayındaki düşük harcamanın geçici bir durum olup olmadığına dair kesin bilgi bulunmamaktadır.",
+        saving_tip: "Gelecekteki harcama dalgalanmalarını yönetmek için aylık bütçe planlaması yapın ve acil durum fonu oluşturun.",
+        historical: [
+          { month: "2026-03", total: 18432 },
+          { month: "2026-04", total: 22150 },
+          { month: "2026-05", total: 9800 },
+        ],
+      });
+      setLoading(false);
+      return;
+    }
     if (!userId) return;
     analyticsApi.getForecast(userId)
       .then(r => { setData(r.data.forecast); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [userId]);
+  }, [userId, isDemo]);
 
   const confidenceLabel: Record<string, string> = {
     high: "Yüksek güven", medium: "Orta güven", low: "Düşük güven"

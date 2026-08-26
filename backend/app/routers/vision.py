@@ -49,6 +49,7 @@ async def extract_from_image(
     file: UploadFile = File(...),
     user_id: str = Form(...),
     save: Optional[str] = Form("true"),
+    month: Optional[str] = Form(None),
     db: AsyncSession = Depends(get_db),
 ):
     """Extract transactions from image. Pass save=false to only parse without saving to DB."""
@@ -80,6 +81,14 @@ async def extract_from_image(
         # Only persist when save=true (default)
         if save != "false" and result_txs:
             uid = uuid.UUID(user_id)
+            if month:
+                try:
+                    year, mon = map(int, month.split("-"))
+                    transaction_date = datetime(year, mon, 15)
+                except Exception:
+                    transaction_date = datetime.utcnow()
+            else:
+                transaction_date = datetime.utcnow()
             for tx in result_txs:
                 record = Transaction(
                     id=uuid.uuid4(),
@@ -88,7 +97,7 @@ async def extract_from_image(
                     category=tx["category"],
                     description=tx["description"],
                     merchant=tx["merchant"],
-                    transaction_date=datetime.utcnow(),
+                    transaction_date=transaction_date,
                     is_income=False,
                 )
                 db.add(record)

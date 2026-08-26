@@ -226,15 +226,16 @@ export default function Dashboard() {
   const cats = data?.category_chart || [];
 
   const navItems = [
-    { key: "chat", icon: "💬", label: "Asistan" },
-    { key: "analytics", icon: "📊", label: "Dashboard" },
-    { key: "literacy", icon: "📚", label: "Finansal Okuryazarlık Köşesi" },
+    { key: "chat", icon: "💬", label: "Asistan", shortLabel: "Asistan" },
+    { key: "analytics", icon: "📊", label: "Dashboard", shortLabel: "Dashboard" },
+    { key: "literacy", icon: "📚", label: "Finansal Okuryazarlık Köşesi", shortLabel: "Finans" },
   ];
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: "var(--bg-base)" }}>
-      {/* Sidebar */}
-      <aside className="w-56 shrink-0 flex flex-col border-r border-[#ffffff0f]"
+
+      {/* DESKTOP Sidebar — mobilde gizli */}
+      <aside className="sidebar-desktop w-56 shrink-0 flex-col border-r border-[#ffffff0f]"
         style={{ background: "var(--bg-surface)" }}>
         {/* Logo */}
         <div className="p-5 border-b border-[#ffffff0f]">
@@ -260,7 +261,7 @@ export default function Dashboard() {
           ))}
         </nav>
 
-        {/* Score — D.05 + E.03 animated ring + confetti */}
+        {/* Score */}
         <div className="flex-1 flex flex-col items-center justify-center p-4">
           {!loading && score.score !== undefined && (
             <>
@@ -301,11 +302,36 @@ export default function Dashboard() {
         </div>
       </aside>
 
-      {/* Main */}
-      <main className="flex-1 flex flex-col min-w-0">
+      {/* MAIN content */}
+      <main className="main-content flex-1 flex flex-col min-w-0 overflow-hidden">
+
+        {/* MOBİL Header */}
+        <header className="md:hidden flex items-center justify-between px-4 py-3 border-b border-[#ffffff0f] shrink-0"
+          style={{ background: "var(--bg-surface)" }}>
+          <h1 className="text-lg font-bold">
+            <span className="text-white">Fin</span>
+            <span className="text-[#f59e0b]">Mind</span>
+          </h1>
+          <div className="flex items-center gap-2">
+            {isDemo && (
+              <span className="text-[10px] text-[#f59e0b] bg-[#f59e0b11] border border-[#f59e0b22] rounded-full px-2 py-0.5">
+                Demo
+              </span>
+            )}
+            <button onClick={toggle}
+              className="text-[#44445a] hover:text-[#f59e0b] text-lg transition-colors">
+              {theme === "dark" ? "☀️" : "🌙"}
+            </button>
+            <button onClick={() => { localStorage.clear(); router.push("/"); }}
+              className="text-[10px] text-[#44445a] hover:text-[#8888a0] transition-colors">
+              Çıkış
+            </button>
+          </div>
+        </header>
+
         {tab === "chat" && (
           <>
-            <header className="shrink-0 border-b border-[#ffffff0f] px-6 py-4 flex items-center gap-3"
+            <header className="hidden md:flex shrink-0 border-b border-[#ffffff0f] px-6 py-4 items-center gap-3"
               style={{ background: "var(--bg-surface)" }}>
               <div>
                 <h2 className="font-semibold text-white">Finansal Asistanınız</h2>
@@ -321,7 +347,7 @@ export default function Dashboard() {
         )}
 
         {tab === "analytics" && (
-          <div className="flex-1 overflow-y-auto p-6 space-y-5">
+          <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-5">
             {loading ? (
               <SkeletonDashboard />
             ) : (
@@ -337,7 +363,6 @@ export default function Dashboard() {
                   </button>
                 </div>
 
-                {/* Stats — D.01 CountUp */}
                 <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
                   <StatCard label="Bu Ay Harcama"
                     rawValue={s.total_spent_this_month ?? 0}
@@ -358,10 +383,8 @@ export default function Dashboard() {
                     sub={`%${s.savings_rate_pct ?? 0} oran`} trend="up" delay="0.2s"/>
                 </div>
 
-                {/* DNA — D.04 badge-in animation */}
                 {dna && <DNACard dna={dna} />}
 
-                {/* Charts — D.02 custom tooltip */}
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
                   <div className="bg-[#16161f] border border-[#ffffff0f] rounded-2xl p-5 animate-fade-up-3">
                     <p className="text-[10px] text-[#44445a] uppercase tracking-widest mb-4">Aylık Harcama Trendi</p>
@@ -411,10 +434,8 @@ export default function Dashboard() {
                 </div>
 
                 <MonthlyChart userId={userId} />
+                <ForecastCard userId={userId} isDemo={isDemo} />
 
-                <ForecastCard userId={userId} />
-
-                {/* Goals — D.03 hover hint */}
                 {goals.length > 0 && (
                   <div className="animate-fade-up">
                     <p className="text-[10px] text-[#44445a] uppercase tracking-widest mb-3">🎯 Finansal Hedefler</p>
@@ -429,7 +450,7 @@ export default function Dashboard() {
                   </div>
                 )}
 
-                <CarbonCard userId={userId} />
+                <CarbonCard userId={userId} isDemo={isDemo} />
               </>
             )}
           </div>
@@ -440,6 +461,27 @@ export default function Dashboard() {
         )}
       </main>
 
+      {/* MOBİL Bottom Navigation */}
+      <nav className="mobile-nav fixed bottom-0 left-0 right-0 z-40 border-t border-[#ffffff0f] px-2 py-2"
+        style={{ background: "var(--bg-surface)" }}>
+        <div className="flex items-center justify-around">
+          {navItems.map(item => (
+            <button key={item.key} onClick={() => setTab(item.key as any)}
+              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${
+                tab === item.key
+                  ? "text-[#f59e0b]"
+                  : "text-[#44445a] hover:text-[#8888a0]"
+              }`}>
+              <span className="text-xl">{item.icon}</span>
+              <span className="text-[10px] font-medium">{item.shortLabel}</span>
+              {tab === item.key && (
+                <div className="w-1 h-1 rounded-full bg-[#f59e0b]"/>
+              )}
+            </button>
+          ))}
+        </div>
+      </nav>
+
       {showAddModal && (
         <AddTransactionModal
           userId={userId}
@@ -447,6 +489,7 @@ export default function Dashboard() {
           onSuccess={() => {
             setShowAddModal(false);
             analyticsApi.getDashboard(userId).then(d => setData(d.data));
+            goalsApi.getAll(userId).then(g => setGoals(g.data));
           }}
         />
       )}

@@ -15,6 +15,19 @@ const CATEGORY_LABELS: Record<string, string> = {
   health: "💊 Sağlık", education: "📚 Eğitim", other: "📦 Diğer",
 };
 
+const MONTHS = Array.from({ length: 6 }, (_, i) => {
+  const d = new Date();
+  d.setMonth(d.getMonth() - i);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const labels = ["", "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+                  "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+  return {
+    value: `${y}-${m}`,
+    label: `${labels[d.getMonth() + 1]} ${y}`,
+  };
+});
+
 export default function VisionUpload({ userId, onSuccess }: {
   userId: string;
   onSuccess?: (count: number) => void;
@@ -24,6 +37,7 @@ export default function VisionUpload({ userId, onSuccess }: {
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<{ transactions: ExtractedTx[]; confidence: string; note: string } | null>(null);
   const [error, setError] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState(MONTHS[0].value);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = (f: File) => {
@@ -47,15 +61,14 @@ export default function VisionUpload({ userId, onSuccess }: {
     if (f) handleFile(f);
   };
 
-  // ADIM 1: Gemini ile analiz et, KAYDETME (save: false)
   const handleExtract = async () => {
     if (!file) return;
     setState("loading");
     try {
-      const res = await visionApi.extract(file, userId, false);
+      const res = await visionApi.extract(file, userId, selectedMonth);
       if (res.data.success) {
         setResult(res.data);
-        setState("review"); // kullanıcı inceleme ekranı
+        setState("review");
       } else {
         setError(res.data.error || "Analiz başarısız.");
         setState("error");
@@ -66,14 +79,11 @@ export default function VisionUpload({ userId, onSuccess }: {
     }
   };
 
-  // ADIM 2: Kullanıcı onayladı → bulk olarak kaydet
   const handleConfirm = async () => {
     if (!result || result.transactions.length === 0) return;
     setState("saving");
     try {
-      const now = new Date();
-      const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-      await transactionApi.addBulk(userId, result.transactions, month);
+      await transactionApi.addBulk(userId, result.transactions, selectedMonth);
       setState("done");
       setTimeout(() => onSuccess?.(result.transactions.length), 900);
     } catch {
@@ -87,6 +97,28 @@ export default function VisionUpload({ userId, onSuccess }: {
     setResult(null); setError("");
   };
 
+  const MonthPicker = () => (
+    <div className="mb-4">
+      <label className="text-xs text-[#8888a0] mb-2 block uppercase tracking-widest">
+        Hangi aya ait?
+      </label>
+      <div className="flex gap-2 flex-wrap">
+        {MONTHS.map(m => (
+          <button
+            key={m.value}
+            onClick={() => setSelectedMonth(m.value)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              selectedMonth === m.value
+                ? "bg-[#f59e0b] text-black"
+                : "bg-[#0d0d14] border border-[#ffffff0f] text-[#8888a0] hover:border-[#f59e0b33]"
+            }`}>
+            {m.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
   const confidenceColor = result?.confidence === "high"
     ? "#10b981" : result?.confidence === "medium"
     ? "#f59e0b" : "#ef4444";
@@ -97,25 +129,27 @@ export default function VisionUpload({ userId, onSuccess }: {
   return (
     <div className="space-y-4">
 
-      {/* Boş alan — dosya seç */}
       {state === "idle" && (
-        <div
-          onClick={() => inputRef.current?.click()}
-          onDrop={handleDrop}
-          onDragOver={e => e.preventDefault()}
-          className="border-2 border-dashed border-[#ffffff0f] hover:border-[#f59e0b44] rounded-2xl p-10 text-center cursor-pointer transition-all duration-300 hover:bg-[#f59e0b04] group"
-        >
-          <div className="text-4xl mb-3 group-hover:scale-110 transition-transform">📸</div>
-          <p className="text-white font-medium mb-1">Fatura veya defter fotoğrafı yükle</p>
-          <p className="text-xs text-[#44445a]">Sürükle bırak veya tıkla · JPG, PNG, WEBP</p>
-          <input ref={inputRef} type="file" accept="image/*" className="hidden"
-            onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} />
-        </div>
+        <>
+          <MonthPicker />
+          <div
+            onClick={() => inputRef.current?.click()}
+            onDrop={handleDrop}
+            onDragOver={e => e.preventDefault()}
+            className="border-2 border-dashed border-[#ffffff0f] hover:border-[#f59e0b44] rounded-2xl p-10 text-center cursor-pointer transition-all duration-300 hover:bg-[#f59e0b04] group"
+          >
+            <div className="text-4xl mb-3 group-hover:scale-110 transition-transform">📸</div>
+            <p className="text-white font-medium mb-1">Fatura veya defter fotoğrafı yükle</p>
+            <p className="text-xs text-[#44445a]">Sürükle bırak veya tıkla · JPG, PNG, WEBP</p>
+            <input ref={inputRef} type="file" accept="image/*" className="hidden"
+              onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} />
+          </div>
+        </>
       )}
 
-      {/* Fotoğraf önizleme */}
       {state === "preview" && (
         <div className="space-y-4">
+          <MonthPicker />
           <div className="relative rounded-2xl overflow-hidden border border-[#ffffff0f] max-h-64">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={imgPreview} alt="Önizleme" className="w-full object-contain max-h-64" />
@@ -134,7 +168,6 @@ export default function VisionUpload({ userId, onSuccess }: {
         </div>
       )}
 
-      {/* Analiz yükleniyor */}
       {state === "loading" && (
         <div className="text-center py-12 space-y-4">
           <div className="relative w-16 h-16 mx-auto">
@@ -157,10 +190,8 @@ export default function VisionUpload({ userId, onSuccess }: {
         </div>
       )}
 
-      {/* İNCELEME ekranı — kullanıcı onay verir */}
       {state === "review" && result && (
         <div className="space-y-4">
-          {/* Başlık + güven */}
           <div className="flex items-center justify-between">
             <div>
               <p className="text-white font-semibold">
@@ -206,7 +237,6 @@ export default function VisionUpload({ userId, onSuccess }: {
             </p>
           )}
 
-          {/* Onay butonları */}
           {result.transactions.length > 0 && (
             <div className="flex gap-3 pt-1">
               <button onClick={reset}
@@ -228,7 +258,6 @@ export default function VisionUpload({ userId, onSuccess }: {
         </div>
       )}
 
-      {/* Kaydediliyor */}
       {state === "saving" && (
         <div className="text-center py-10 space-y-3">
           <div className="relative w-12 h-12 mx-auto">
@@ -240,7 +269,6 @@ export default function VisionUpload({ userId, onSuccess }: {
         </div>
       )}
 
-      {/* Başarıyla kaydedildi */}
       {state === "done" && (
         <div className="text-center py-10 space-y-3">
           <div className="text-4xl">✅</div>
@@ -249,7 +277,6 @@ export default function VisionUpload({ userId, onSuccess }: {
         </div>
       )}
 
-      {/* Hata */}
       {state === "error" && (
         <div className="space-y-4">
           <div className="bg-red-400/10 border border-red-400/20 rounded-xl p-4 text-center">

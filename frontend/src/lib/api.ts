@@ -57,11 +57,12 @@ export const goalsApi = {
 };
 
 export const visionApi = {
-  extract: (file: File, userId: string, save = true) => {
+  extract: (file: File, userId: string, month?: string) => {
     const form = new FormData();
     form.append("file", file);
     form.append("user_id", userId);
-    form.append("save", save ? "true" : "false");
+    form.append("save", "false");
+    if (month) form.append("month", month);
     return api.post("/api/vision/extract", form, {
       headers: { "Content-Type": "multipart/form-data" },
     });

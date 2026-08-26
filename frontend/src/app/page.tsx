@@ -92,6 +92,10 @@ export default function Landing() {
     if (!form.full_name || !form.email || !form.monthly_income) {
       setError("Lütfen tüm alanları doldurun."); return;
     }
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email);
+    if (!emailOk) {
+      setError("Geçerli bir e-posta adresi girin (örn: ad@gmail.com)"); return;
+    }
     setError(""); goTo(2);
   };
 
@@ -164,7 +168,11 @@ export default function Landing() {
     } catch (e: any) {
       const detail = e?.response?.data?.detail;
       const status = e?.response?.status;
-      setError(detail || `Hata (${status || e?.message || "bilinmiyor"}). Lütfen tekrar deneyin.`);
+      // FastAPI 422 validation errors return detail as an array of objects
+      const msg = Array.isArray(detail)
+        ? detail.map((d: any) => d.msg).join(", ")
+        : detail || `Hata (${status || e?.message || "bilinmiyor"}). Lütfen tekrar deneyin.`;
+      setError(msg);
       console.error("handleFinish error:", e?.response || e);
     } finally { setLoading(false); }
   };
@@ -172,11 +180,11 @@ export default function Landing() {
   // ── Home ─────────────────────────────────────────────────────────────
   if (mode === "home") {
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden">
+      <main className="min-h-screen flex flex-col items-center justify-center p-4 md:p-6 relative overflow-hidden">
         <div className="fixed inset-0 opacity-[0.03]"
           style={{ backgroundImage: "linear-gradient(#f59e0b 1px,transparent 1px),linear-gradient(90deg,#f59e0b 1px,transparent 1px)", backgroundSize: "60px 60px" }} />
 
-        <div className="relative z-10 w-full max-w-md space-y-10 text-center animate-fade-up">
+        <div className="relative z-10 w-full max-w-md space-y-6 md:space-y-10 text-center animate-fade-up">
           <div className="space-y-3">
             <div className="inline-flex items-center gap-2 bg-[#f59e0b11] border border-[#f59e0b33] rounded-full px-4 py-1.5 text-xs text-[#f59e0b] font-medium tracking-widest uppercase mb-4">
               BTK Akademi Hackathon &apos;26
@@ -204,28 +212,28 @@ export default function Landing() {
 
           <div className="space-y-3">
             {error && <p className="text-red-400 text-xs bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">{error}</p>}
-            <button onClick={handleDemo} disabled={loading}
-              className="group w-full relative overflow-hidden bg-[#f59e0b] disabled:opacity-70 text-black font-semibold py-4 px-6 rounded-2xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:scale-100"
+            <button onClick={() => setMode("onboard")}
+              className="group w-full relative overflow-hidden bg-[#f59e0b] text-black font-semibold py-4 px-6 rounded-2xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
               style={{ boxShadow: "0 0 40px #f59e0b33" }}>
+              <span className="flex flex-col">
+                <span className="text-base">✨ Hemen Başla</span>
+                <span className="text-xs font-normal opacity-70 mt-0.5">Gerçek harcamalarınla kişisel analiz al</span>
+              </span>
+            </button>
+            <button onClick={handleDemo} disabled={loading}
+              className="w-full bg-[#16161f] hover:bg-[#1c1c28] disabled:opacity-70 border border-[#ffffff0f] hover:border-[#f59e0b33] text-white font-semibold py-4 px-6 rounded-2xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:scale-100">
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <span className="w-4 h-4 border-2 border-black border-t-transparent rounded-full"
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
                     style={{ animation: "spin 0.8s linear infinite" }} />
                   Demo yükleniyor...
                 </span>
               ) : (
                 <span className="flex flex-col">
                   <span className="text-base">🚀 Demo ile İncele</span>
-                  <span className="text-xs font-normal opacity-70 mt-0.5">Hazır verilerle hemen başla — kayıt gerekmez</span>
+                  <span className="text-xs font-normal text-[#8888a0] mt-0.5">Temsili Verilerle Sistemi Tanıyın</span>
                 </span>
               )}
-            </button>
-            <button onClick={() => setMode("onboard")}
-              className="w-full bg-[#16161f] hover:bg-[#1c1c28] border border-[#ffffff0f] hover:border-[#f59e0b33] text-white font-semibold py-4 px-6 rounded-2xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]">
-              <span className="flex flex-col">
-                <span className="text-base">✨ Kendi Verilerimle Dene</span>
-                <span className="text-xs font-normal text-[#8888a0] mt-0.5">Gerçek harcamalarınla kişisel analiz al</span>
-              </span>
             </button>
           </div>
 

@@ -15,16 +15,35 @@ interface CarbonData {
   period: string;
 }
 
-export default function CarbonCard({ userId }: { userId: string }) {
+export default function CarbonCard({ userId, isDemo = false }: { userId: string; isDemo?: boolean }) {
   const [data, setData] = useState<CarbonData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (isDemo) {
+      setData({
+        total_co2_kg: 233.4,
+        transport_co2_kg: 104,
+        food_co2_kg: 129.5,
+        turkey_avg_kg: 350,
+        comparison_pct: 66.7,
+        trees_needed: 127.3,
+        level: "orta",
+        level_color: "#f59e0b",
+        tips: [
+          "Toplu taşımaya geçiş ulaşım karbon ayak izinizi %60 azaltır",
+          "Haftada 2 gün et tüketimini azaltmak yıllık ~120 kg CO2 tasarrufu sağlar"
+        ],
+        period: "Son 30 gün",
+      });
+      setLoading(false);
+      return;
+    }
     if (!userId) return;
     analyticsApi.getCarbon(userId)
       .then(r => { setData(r.data.carbon); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [userId]);
+  }, [userId, isDemo]);
 
   if (loading) return (
     <div className="bg-[#16161f] border border-[#ffffff0f] rounded-2xl p-5 space-y-3">
@@ -124,6 +143,10 @@ export default function CarbonCard({ userId }: { userId: string }) {
           </p>
         ))}
       </div>
+
+      <p className="text-[9px] text-[#44445a] mt-2 pt-2 border-t border-[#ffffff0f]">
+        Kaynak: IEA Turkey Energy Profile 2023 · FAO Food Systems GHG Emissions Report
+      </p>
     </div>
   );
 }
